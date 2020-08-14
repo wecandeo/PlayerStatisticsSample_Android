@@ -10,6 +10,9 @@ import android.util.Log;
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.scenappsm.wecandeosdkplayer.WecandeoSdk;
 import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
 
@@ -37,8 +40,9 @@ public class Statistics {
     public static final String RETRY = "RETRY";
     public static final String SEEK = "SEEK";
 
-    private JSONObject videoInfo;
-    private JSONObject playStatisticsInfo;
+    private JsonObject videoInfo;
+    private JsonObject playStatisticsInfo;
+    JsonArray cuePointArray;
 
     private long duration;
     private int startTime;
@@ -54,8 +58,6 @@ public class Statistics {
 
     private TimerTask mTask;
     private Timer mTimer;
-
-    JSONArray cuePointArray;
 
 
     public Statistics(Context context){
@@ -79,15 +81,10 @@ public class Statistics {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        try{
-                            JSONObject jsonObject = new JSONObject(response);
-                            JSONObject videoDetailJson =  jsonObject.getJSONObject("VideoDetail");
-                            cuePointArray = videoDetailJson.getJSONArray("CuePointList");
-                            getVideoStatsInfo();
-
-                        }catch(JSONException e){
-                            e.printStackTrace();
-                        }
+                        JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+                        JsonObject videoDetailJson =  jsonObject.get("VideoDetail").getAsJsonObject();
+                        cuePointArray = videoDetailJson.get("CuePointList").getAsJsonArray();
+                        getVideoStatsInfo();
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -106,20 +103,16 @@ public class Statistics {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        try{
-                            JSONObject jsonObject = new JSONObject(response);
-                            videoInfo = (JSONObject) jsonObject.get("statsInfo");
-                            videoInfo.remove("errorInfo");
-                            videoInfo.put("ref", context.getResources().getString(R.string.httpsString) + context.getPackageName());
-                            videoInfo.put("e", "pl");
-                            videoInfo.put("fv", "0.0.0");
-                            for(int i = 0; i < cuePointArray.length(); i++){
-                                cuePointArray.getJSONObject(i).put("plid", videoInfo.getInt("plid"));
-                            }
-                            playerLoadStatistics();
-                        }catch(JSONException e){
-                            e.printStackTrace();
+                        JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+                        videoInfo = (JsonObject) jsonObject.get("statsInfo");
+                        videoInfo.remove("errorInfo");
+                        videoInfo.addProperty("ref", "https://" + context.getPackageName());
+                        videoInfo.addProperty("e", "pl");
+                        videoInfo.addProperty("fv", "0.0.0");
+                        for(int i = 0; i < cuePointArray.size(); i++){
+                            cuePointArray.get(i).getAsJsonObject().addProperty("plid", videoInfo.get("plid").getAsInt());
                         }
+                        playerLoadStatistics();
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -159,144 +152,123 @@ public class Statistics {
                 }
                 break;
             case PLAY :
-                try{
-                    playStatisticsInfo = new JSONObject(videoInfo.toString());
-                    if(isInitPlay || isStopped){
-                        isInitPlay = false;
-                        isStopped = false;
-                        isPaused = false;
-                        playStatisticsInfo.put("e", "vs");
-                        playStatisticsInfo.put("dtt", duration);
-                        playStatisticsInfo.remove("dst");
-                        playStatisticsInfo.remove("det");
-                        startTime = 0;
-                        currentTime = 0;
-                        String url = context.getResources().getString(R.string.videoPlaysUrl) + playStatisticsInfo.toString();
-                        CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
-                                new Response.Listener<String>() {
-                                    @Override
-                                    public void onResponse(String response) {
-                                        Log.d(TAG, "success, urlData : " + url);
-                                        timeUpdate(playStatisticsInfo);
-                                    }
-                                }, new Response.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
+                playStatisticsInfo = JsonParser.parseString(videoInfo.toString()).getAsJsonObject();
+                if(isInitPlay || isStopped){
+                    isInitPlay = false;
+                    isStopped = false;
+                    isPaused = false;
+                    playStatisticsInfo.addProperty("e", "vs");
+                    playStatisticsInfo.addProperty("dtt", duration);
+                    playStatisticsInfo.remove("dst");
+                    playStatisticsInfo.remove("det");
+                    startTime = 0;
+                    currentTime = 0;
+                    String url = context.getResources().getString(R.string.videoPlaysUrl) + playStatisticsInfo.toString();
+                    CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
+                            new Response.Listener<String>() {
+                                @Override
+                                public void onResponse(String response) {
+                                    Log.d(TAG, "success, urlData : " + url);
+                                    timeUpdate(playStatisticsInfo);
+                                }
+                            }, new Response.ErrorListener() {
+                        @Override
+                        public void onErrorResponse(VolleyError error) {
                             Log.d(TAG, "sendStatistics is error!!! " + error.getLocalizedMessage());
                         }
                     });
-                        RequestSingleton.getInstance(context).addToRequestQueue(request);
-                    }else{
-                        isPaused = false;
-                        startTime = currentTime;
-                        timeUpdate(playStatisticsInfo);
-                    }
-                }catch(JSONException e){
-                    e.printStackTrace();
+                    RequestSingleton.getInstance(context).addToRequestQueue(request);
+                }else{
+                    isPaused = false;
+                    startTime = currentTime;
+                    timeUpdate(playStatisticsInfo);
                 }
                 break;
             case STOP :
-                try{
-                    if(mTimer != null){
-                        mTimer.cancel();
-                        isStopped = true;
-                        videoInfo.put("e", "vt");
-                        videoInfo.put("dtt", duration);
-                        videoInfo.put("dst", startTime);
-                        videoInfo.put("det", currentTime);
-                        sendLog(playsUrl, videoInfo);
-                        reset();
-                        mTimer = null;
-                    }
-                }catch(JSONException e){
-                    e.printStackTrace();
+                if(mTimer != null){
+                    mTimer.cancel();
+                    isStopped = true;
+                    videoInfo.addProperty("e", "vt");
+                    videoInfo.addProperty("dtt", duration);
+                    videoInfo.addProperty("dst", startTime);
+                    videoInfo.addProperty("det", currentTime);
+                    sendLog(playsUrl, videoInfo);
+                    reset();
+                    mTimer = null;
                 }
                 break;
             case PAUSE :
-                try{
-                    if(mTimer != null){
-                        isPaused = true;
-                        mTimer.cancel();
-                        videoInfo.put("e", "vp");
-                        videoInfo.put("dtt", duration);
-                        videoInfo.put("dst", startTime);
-                        videoInfo.put("det", currentTime);
-                        sendLog(playsUrl, videoInfo);
-                    }
-                }catch(JSONException e){
-                    e.printStackTrace();
+                if(mTimer != null){
+                    isPaused = true;
+                    mTimer.cancel();
+                    videoInfo.addProperty("e", "vp");
+                    videoInfo.addProperty("dtt", duration);
+                    videoInfo.addProperty("dst", startTime);
+                    videoInfo.addProperty("det", currentTime);
+                    sendLog(playsUrl, videoInfo);
                 }
                 break;
             case SEEK:
-                  if(mTimer != null && !isPaused){
-                      try{
-                          videoInfo.remove("e");
-                          videoInfo.put("dtt", duration);
-                          videoInfo.put("dst", startTime);
-                          videoInfo.put("det", currentTime);
-                          videoInfo.put("e", "vk");
-                          startTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
-                          currentTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
-                          sendLog(playsUrl, videoInfo);
-                      }catch(JSONException e){
-                          e.printStackTrace();
-                      }
-                  }
+                if(mTimer != null && !isPaused){
+                    videoInfo.remove("e");
+                    videoInfo.addProperty("dtt", duration);
+                    videoInfo.addProperty("dst", startTime);
+                    videoInfo.addProperty("det", currentTime);
+                    videoInfo.addProperty("e", "vk");
+                    startTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
+                    currentTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
+                    sendLog(playsUrl, videoInfo);
+                }
                 break;
         }
     }
 
     // 큐 포인트 클릭 통계 이벤트
     public void cuePointClick(int cuePointId){
-        try{
-            for(int i = 0; i < cuePointArray.length(); i++){
-                if(cuePointId == cuePointArray.getJSONObject(i).getInt("cue_point_id")){
-                    JSONObject ccObject = new JSONObject();
-                    ccObject.put("vid", cuePointArray.getJSONObject(i).getInt("video_id"));
-                    ccObject.put("gid", cuePointArray.getJSONObject(i).getInt("gid"));
-                    ccObject.put("plid", cuePointArray.getJSONObject(i).getInt("plid"));
-                    ccObject.put("pid", cuePointArray.getJSONObject(i).getInt("package_id"));
-                    ccObject.put("cpid", cuePointArray.getJSONObject(i).getInt("cue_point_id"));
-                    ccObject.put("e", "cc");
-                    sendLog(cuePointUrl, ccObject);
-                }
+        for(int i = 0; i < cuePointArray.size(); i++){
+            if(cuePointId == cuePointArray.get(i).getAsJsonObject().get("cue_point_id").getAsInt()){
+                JsonObject ccObject = new JsonObject();
+                ccObject.addProperty("vid", cuePointArray.get(i).getAsJsonObject().get("video_id").getAsInt());
+                ccObject.addProperty("gid", cuePointArray.get(i).getAsJsonObject().get("gid").getAsInt());
+                ccObject.addProperty("plid", cuePointArray.get(i).getAsJsonObject().get("plid").getAsInt());
+                ccObject.addProperty("pid", cuePointArray.get(i).getAsJsonObject().get("package_id").getAsInt());
+                ccObject.addProperty("cpid",cuePointArray.get(i).getAsJsonObject().get("cue_point_id").getAsInt());
+                ccObject.addProperty("e", "cc");
+                sendLog(cuePointUrl, ccObject);
             }
-        }catch(JSONException e){
-            e.printStackTrace();
         }
     }
 
-    private void timeUpdate(JSONObject jsonObject){
+    private void timeUpdate(JsonObject jsonObject){
         mTask = new TimerTask() {
             @Override
             public void run() {
-                try{
                     if(wecandeoSdk.getPlayer() != null){
-                        JSONObject playsObject = new JSONObject(jsonObject.toString());
+                        JsonObject playsObject = JsonParser.parseString(jsonObject.toString()).getAsJsonObject();
                         if(TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition()) > duration){
                             currentTime = (int)duration;
                         }else{
                             currentTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
                         }
                         if(cuePointArray != null){
-                            for(int i = 0; i < cuePointArray.length(); i++){
-                                if(currentTime == cuePointArray.getJSONObject(i).getInt("start_duration")){
-                                    JSONObject cvObject = new JSONObject();
-                                    cvObject.put("vid", cuePointArray.getJSONObject(i).getInt("video_id"));
-                                    cvObject.put("gid", cuePointArray.getJSONObject(i).getInt("gid"));
-                                    cvObject.put("plid", cuePointArray.getJSONObject(i).getInt("plid"));
-                                    cvObject.put("pid", cuePointArray.getJSONObject(i).getInt("package_id"));
-                                    cvObject.put("cpid", cuePointArray.getJSONObject(i).getInt("cue_point_id"));
-                                    cvObject.put("e", "cv");
+                            for(int i = 0; i < cuePointArray.size(); i++){
+                                if(currentTime == cuePointArray.get(i).getAsJsonObject().get("start_duration").getAsInt()){
+                                    JsonObject cvObject = new JsonObject();
+                                    cvObject.addProperty("vid", cuePointArray.get(i).getAsJsonObject().get("video_id").getAsInt());
+                                    cvObject.addProperty("gid", cuePointArray.get(i).getAsJsonObject().get("gid").getAsInt());
+                                    cvObject.addProperty("plid", cuePointArray.get(i).getAsJsonObject().get("plid").getAsInt());
+                                    cvObject.addProperty("pid", cuePointArray.get(i).getAsJsonObject().get("package_id").getAsInt());
+                                    cvObject.addProperty("cpid", cuePointArray.get(i).getAsJsonObject().get("cue_point_id").getAsInt());
+                                    cvObject.addProperty("e", "cv");
                                     sendLog(cuePointUrl, cvObject);
                                 }
                             }
                         }
                         if(currentTime - startTime >= intervalTime){
-                            playsObject.put("e", "vi");
-                            playsObject.put("dtt", duration);
-                            playsObject.put("dst", startTime);
-                            playsObject.put("det", currentTime);
+                            playsObject.addProperty("e", "vi");
+                            playsObject.addProperty("dtt", duration);
+                            playsObject.addProperty("dst", startTime);
+                            playsObject.addProperty("det", currentTime);
                             sendLog(playsUrl, playsObject);
                             startTime = currentTime;
                         }
@@ -311,17 +283,17 @@ public class Statistics {
                         if(percentByTime >= 100)
                             index = 100 / PERCENT;
                         if(section != PERCENT * index){
-                            JSONObject sectionInfo = new JSONObject(jsonObject.toString());
-                            sectionInfo.put("dtt", duration);
+                            JsonObject sectionInfo = JsonParser.parseString(jsonObject.toString()).getAsJsonObject();
+                            sectionInfo.addProperty("dtt", duration);
                             section = PERCENT * index;
-                            sectionInfo.put("section", section);
+                            sectionInfo.addProperty("section", section);
                             try {
                                 PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
                                 String version = pInfo.versionName;
                                 if(version.length() > 3){
                                     version = version.substring(0, 3);
                                 }
-                                sectionInfo.put("ver", "WCD_SDK_" + version);
+                                sectionInfo.addProperty("ver", "WCD_SDK_" + version);
                             } catch (PackageManager.NameNotFoundException e) {
                                 e.printStackTrace();
                             }
@@ -333,16 +305,13 @@ public class Statistics {
                             sendLog(sectionsUrl, sectionInfo);
                         }
                     }
-                }catch(JSONException e){
-                    e.printStackTrace();
-                }
             }
         };
         mTimer = new Timer();
         mTimer.schedule(mTask, 100, 1000);
     }
 
-    private void sendLog(String url, JSONObject resultObject){
+    private void sendLog(String url, JsonObject resultObject){
         String urlData = url + resultObject.toString();
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, urlData,
                 new Response.Listener<String>() {
