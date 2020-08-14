@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">androidwcPlayerStatistics</string>
-    <string name="main_button">PLAYER MOVE</string>
+    <string name="vod_button">VOD MOVE</string>
+    <string name="live_button">LIVE MOVE</string>
     <!-- 내부 drm -->
     <string name="videoKey">BOKNS9AQWrEzo3nVip5Fip3AwjosQWTPOSU2GeYMy3AGL1YTnKcO6bnyho4pqLKNis4ZCy4IG7kZTQ431147TteoAieie</string>
     <string name="gId">2209</string>
@@ -8,12 +9,17 @@
     <string name="videoId">6853267</string>
     <string name="secretKey">Xxm+WW4tUAW4Mxa15eKuCncQl7Sj1UDKmYK/RTUzLWs=</string>
 
-    <!-- url 정보 -->
+    <!-- vod url 정보 -->
     <string name="videoStatsInfoUrl">https://api.wecandeo.com/v1/player/stats/info.json?k=</string>
     <string name="videoInfoUrl">https://api.wecandeo.com/v1/new/player/video.json?k=</string>
     <string name="videoPlaysUrl">http://couscous.wecandeo.com/api/videoPlays?data=</string>
     <string name="videoSectionUrl">http://couscous.wecandeo.com/api/videoSections?data=</string>
     <string name="cuePointUrl">http://couscous.wecandeo.com/api/videoCuePoints?data=</string>
+
+    <!-- live url 정보 -->
+    <string name="liveStatsInfoUrl">https://api.wecandeo.com/live/player/stats/info.json?k=</string>
+    <string name="liveInfoUrl">https://api.wecandeo.com/live/new/player/info.json?k=</string>
+    <string name="liveLogUrl">https://couscous.wecandeo.com/api/liveWatches?data=</string>
 
     <string name="httpsString">https://</string>
     <!-- button text -->

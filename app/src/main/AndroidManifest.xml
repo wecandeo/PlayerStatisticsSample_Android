@@ -19,7 +19,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".PlayerActivity"
+        android:name=".PlayerActivity"
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
+        android:launchMode="singleTop"/>
+        <activity
+            android:name=".LiveActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:launchMode="singleTop"/>

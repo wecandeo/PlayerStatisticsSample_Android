@@ -1,12 +1,14 @@
 package com.scenappsm.android.wcPlayerStatistics;
 
-import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackParameters;
@@ -15,6 +17,8 @@ import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.scenappsm.wecandeosdkplayer.SdkInterface;
 import com.scenappsm.wecandeosdkplayer.WecandeoSdk;
 import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
@@ -30,7 +34,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     WecandeoVideo wecandeoVideo;
     boolean isDrm = true;
 
-    Statistics statistics;
+    VodStatistics vodStatistics;
 
     private static final String TAG = "PlayerActivity";
     private static final int PLAY_ENABLE = 3; // 즉시 플레이 가능
@@ -108,33 +112,63 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         wecandeoSdk.addPlayerListener(this);
 
         wecandeoVideo = new WecandeoVideo();
-        wecandeoVideo.setVideoKey(getResources().getString(R.string.videoKey));
-        wecandeoVideo.setgId(getResources().getString(R.string.gId));
-        wecandeoVideo.setPackageId(getResources().getString(R.string.packageId));
-        wecandeoVideo.setVideoId(getResources().getString(R.string.videoId));
-        wecandeoVideo.setSecretKey(getResources().getString(R.string.secretKey));
         wecandeoVideo.setDrm(isDrm);
-        wecandeoSdk.setWecandeoVideo(wecandeoVideo);
-        wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
-        wecandeoSdk.setDebugTextView(debugText);
+        if(isDrm){
+            wecandeoVideo.setVideoKey(getResources().getString(R.string.videoKey));
+            wecandeoVideo.setgId(getResources().getString(R.string.gId));
+            wecandeoVideo.setPackageId(getResources().getString(R.string.packageId));
+            wecandeoVideo.setVideoId(getResources().getString(R.string.videoId));
+            wecandeoVideo.setSecretKey(getResources().getString(R.string.secretKey));
+            wecandeoSdk.setWecandeoVideo(wecandeoVideo);
+            wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
+            wecandeoSdk.setDebugTextView(debugText);
+            //기본 컨트롤 뷰사용
+            wecandeoSdk.setUseController(true);
+            // 통계 연동
+            vodStatistics = new VodStatistics(this);
+        }else{
+            String url = getResources().getString(R.string.videoInfoUrl) + getResources().getString(R.string.videoKey);
+            CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
+                    new Response.Listener<String>() {
+                        @Override
+                        public void onResponse(String response) {
+                            JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
+                            JsonObject videoDetailObject = jsonObject.get("VideoDetail").getAsJsonObject();
+                            String videoKey = videoDetailObject.get("videoUrl").getAsString();
+                            wecandeoVideo.setVideoKey(videoKey);
+                            wecandeoSdk.setWecandeoVideo(wecandeoVideo);
+                            wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
+                            wecandeoSdk.setDebugTextView(debugText);
+                            //기본 컨트롤 뷰사용
+                            wecandeoSdk.setUseController(true);
+                            // 통계 연동
+                            vodStatistics = new VodStatistics(getApplicationContext());
+                            wecandeoSdk.onStart();
+                        }
+                    }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
 
-        //기본 컨트롤 뷰사용
-        wecandeoSdk.setUseController(true);
-
-        // 통계 연동
-        statistics = new Statistics(this);
+                }
+            });
+            RequestSingleton.getInstance(getApplicationContext()).addToRequestQueue(request);
+        }
     }
 
     @Override
     public void onStart(){
         super.onStart();
-        wecandeoSdk.onStart();
+        if(isDrm){
+            wecandeoSdk.onStart();
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        wecandeoSdk.onResume();
+        if(isDrm){
+            wecandeoSdk.onResume();
+        }
     }
 
     @Override
@@ -151,7 +185,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onDestroy(){
-        statistics.onDestroy();
+        vodStatistics.onDestroy();
         super.onDestroy();
     }
 
@@ -174,25 +208,25 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             case R.id.retry_button :
                 disableButton(retryButton);
                 wecandeoSdk.retry();
-                statistics.sendStatistics(Statistics.RETRY);
+                vodStatistics.sendStatistics(VodStatistics.RETRY);
                 isPlaying = true;
                 break;
             case R.id.stop_button :
                 disableButton(stopButton);
                 wecandeoSdk.stop();
-                statistics.sendStatistics(Statistics.STOP);
+                vodStatistics.sendStatistics(VodStatistics.STOP);
                 isPlaying = false;
                 break;
             case R.id.play_button :
                 disableButton(playButton);
                 wecandeoSdk.play();
-                statistics.sendStatistics(Statistics.PLAY);
+                vodStatistics.sendStatistics(VodStatistics.PLAY);
                 isPlaying = true;
                 break;
             case R.id.pause_button :
                 disableButton(pauseButton);
                 wecandeoSdk.pause();
-                statistics.sendStatistics(Statistics.PAUSE);
+                vodStatistics.sendStatistics(VodStatistics.PAUSE);
                 break;
             case R.id.mute_button :
                 wecandeoSdk.setMute(wecandeoSdk.isMute() ? false : true);
@@ -206,13 +240,13 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             case R.id.rewind_button :
                 if(isPlaying){
                     wecandeoSdk.rewind();
-                    statistics.sendStatistics(Statistics.SEEK);
+                    vodStatistics.sendStatistics(VodStatistics.SEEK);
                 }
                 break;
             case R.id.forward_button :
                 if(isPlaying){
                     wecandeoSdk.fastForward();
-                    statistics.sendStatistics(Statistics.SEEK);
+                    vodStatistics.sendStatistics(VodStatistics.SEEK);
                 }
                 break;
             case R.id.full_screen_button :
@@ -266,16 +300,16 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         // 영상이 로드되고 처음 준비 시
         if(playbackState == PLAY_ENABLE && wecandeoSdk.getPlayer() != null && isInitVideoInfo){
             isInitVideoInfo = false;
-            statistics.setWecandeoSdk(wecandeoSdk);
-            statistics.setDuration(TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getDuration()));
+            vodStatistics.setWecandeoSdk(wecandeoSdk);
+            vodStatistics.setDuration(TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getDuration()));
             // 큐포인트 정보, 비디오 정보
-            statistics.sendCuePointStatistics();
+            vodStatistics.fetchVideoDetail(getResources().getString(R.string.videoKey));
         }
 
         // 영상이 완료되었을 때
         if(playWhenReady && playbackState == PLAY_COMPLETE && wecandeoSdk.getPlayer() != null){
             wecandeoSdk.complete();
-            statistics.sendStatistics(Statistics.STOP);
+            vodStatistics.sendStatistics(VodStatistics.STOP);
             if(!playButton.isEnabled()){
                 playButton.setEnabled(true);
             }

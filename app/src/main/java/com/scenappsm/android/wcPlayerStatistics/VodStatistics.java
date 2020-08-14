@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
+import android.util.Base64;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -24,7 +25,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
-public class Statistics {
+public class VodStatistics {
 
     Context context;
     WecandeoSdk wecandeoSdk;
@@ -33,7 +34,7 @@ public class Statistics {
     private String playsUrl;
     private String cuePointUrl;
 
-    private static final String TAG = "Statistics";
+    private static final String TAG = "VodStatistics";
     public static final String PLAY = "PLAY";
     public static final String PAUSE = "PAUSE";
     public static final String STOP = "STOP";
@@ -60,7 +61,7 @@ public class Statistics {
     private Timer mTimer;
 
 
-    public Statistics(Context context){
+    public VodStatistics(Context context){
         this.context = context;
         playsUrl = context.getResources().getString(R.string.videoPlaysUrl);
         sectionsUrl = context.getResources().getString(R.string.videoSectionUrl);
@@ -75,8 +76,8 @@ public class Statistics {
         this.wecandeoSdk = wecandeoSdk;
     }
 
-    public void sendCuePointStatistics(){
-        String url = context.getResources().getString(R.string.videoInfoUrl) + context.getResources().getString(R.string.videoKey);
+    public void fetchVideoDetail(String videoKey){
+        String url = context.getResources().getString(R.string.videoInfoUrl) + videoKey;
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -84,7 +85,7 @@ public class Statistics {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         JsonObject videoDetailJson =  jsonObject.get("VideoDetail").getAsJsonObject();
                         cuePointArray = videoDetailJson.get("CuePointList").getAsJsonArray();
-                        getVideoStatsInfo();
+                        fetchVideoStatistics(videoKey);
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -95,8 +96,8 @@ public class Statistics {
         RequestSingleton.getInstance(context).addToRequestQueue(request);
     }
 
-    public void getVideoStatsInfo(){
-        String url = context.getResources().getString(R.string.videoStatsInfoUrl) + context.getResources().getString(R.string.videoKey);
+    private void fetchVideoStatistics(String videoKey){
+        String url = context.getResources().getString(R.string.videoStatsInfoUrl) + videoKey;
         Log.d(TAG, "getVideoInfo() - url : " + url);
 
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
@@ -106,7 +107,8 @@ public class Statistics {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         videoInfo = (JsonObject) jsonObject.get("statsInfo");
                         videoInfo.remove("errorInfo");
-                        videoInfo.addProperty("ref", "https://" + context.getPackageName());
+                        String ref = context.getResources().getString(R.string.httpsString) + context.getPackageName();
+                        videoInfo.addProperty("ref", Base64.encodeToString(ref.getBytes(), 0));
                         videoInfo.addProperty("e", "pl");
                         videoInfo.addProperty("fv", "0.0.0");
                         for(int i = 0; i < cuePointArray.size(); i++){
@@ -129,7 +131,7 @@ public class Statistics {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d(TAG, "player load statistics : " + url);
+                        Log.d(TAG, "player load vodStatistics : " + url);
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -140,9 +142,9 @@ public class Statistics {
         RequestSingleton.getInstance(context).addToRequestQueue(request);
     }
 
-    public void sendStatistics(String STATE){
+    public void sendStatistics(String state){
 
-        switch (STATE){
+        switch (state){
             case RETRY :
                 isRetry = true;
                 if(playStatisticsInfo == null || isStopped){

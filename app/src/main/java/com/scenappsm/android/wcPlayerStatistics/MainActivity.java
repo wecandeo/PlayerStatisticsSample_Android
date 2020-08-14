@@ -9,7 +9,8 @@ import android.widget.Button;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
-    private Button mainButton;
+    private Button vodButton;
+    private Button liveButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,15 +20,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initViews(){
-        mainButton = findViewById(R.id.button);
-        mainButton.setOnClickListener(this);
+        vodButton = findViewById(R.id.vod_button);
+        vodButton.setOnClickListener(this);
+        liveButton = findViewById(R.id.live_button);
+        liveButton.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v){
         switch (v.getId()){
-            case R.id.button :
+            case R.id.vod_button :
                 startActivity(new Intent(MainActivity.this, PlayerActivity.class));
+                break;
+            case R.id.live_button :
+                startActivity(new Intent(MainActivity.this, LiveActivity.class));
                 break;
         }
     }
