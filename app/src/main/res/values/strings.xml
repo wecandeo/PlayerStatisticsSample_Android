@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">androidwcPlayerStatistics</string>
+    <string name="main_button">PLAYER MOVE</string>
+    <!-- 내부 drm -->
+    <string name="videoKey">BOKNS9AQWrEzo3nVip5Fip3AwjosQWTPOSU2GeYMy3AGL1YTnKcO6bnyho4pqLKNis4ZCy4IG7kZTQ431147TteoAieie</string>
+    <string name="gId">2209</string>
+    <string name="packageId">1006725</string>
+    <string name="videoId">6853267</string>
+    <string name="secretKey">Xxm+WW4tUAW4Mxa15eKuCncQl7Sj1UDKmYK/RTUzLWs=</string>
+
+    <!-- url 정보 -->
+    <string name="videoStatsInfoUrl">https://api.wecandeo.com/v1/player/stats/info.json?k=</string>
+    <string name="videoInfoUrl">https://api.wecandeo.com/v1/new/player/video.json?k=</string>
+    <string name="videoPlaysUrl">http://couscous.wecandeo.com/api/videoPlays?data=</string>
+    <string name="videoSectionUrl">http://couscous.wecandeo.com/api/videoSections?data=</string>
+    <string name="cuePointUrl">http://couscous.wecandeo.com/api/videoCuePoints?data=</string>
+
+    <string name="httpsString">https://</string>
+    <!-- button text -->
+    <string name="retry">RETRY</string>
+    <string name="stop">STOP</string>
+    <string name="play">PLAY</string>
+    <string name="pause">PAUSE</string>
+    <string name="mute">음소거</string>
+    <string name="volumeUp">볼륨업</string>
+    <string name="volumeDown">볼륨다운</string>
+    <string name="rewind">REWIND</string>
+    <string name="forward">FORWARD</string>
+    <string name="fullScreen">FULLSCREEN</string>
+    <string name="actionText">Action : </string>
+</resources>
