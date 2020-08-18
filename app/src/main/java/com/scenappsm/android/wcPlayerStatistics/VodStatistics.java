@@ -30,10 +30,6 @@ public class VodStatistics {
     Context context;
     WecandeoSdk wecandeoSdk;
 
-    private String sectionsUrl;
-    private String playsUrl;
-    private String cuePointUrl;
-
     private static final String TAG = "VodStatistics";
     public static final String PLAY = "PLAY";
     public static final String PAUSE = "PAUSE";
@@ -63,9 +59,6 @@ public class VodStatistics {
 
     public VodStatistics(Context context){
         this.context = context;
-        playsUrl = context.getResources().getString(R.string.videoPlaysUrl);
-        sectionsUrl = context.getResources().getString(R.string.videoSectionUrl);
-        cuePointUrl = context.getResources().getString(R.string.cuePointUrl);
     }
 
     public void setDuration(long duration){
@@ -76,8 +69,9 @@ public class VodStatistics {
         this.wecandeoSdk = wecandeoSdk;
     }
 
+    // 영상 상세정보 조회
     public void fetchVideoDetail(String videoKey){
-        String url = context.getResources().getString(R.string.videoInfoUrl) + videoKey;
+        String url = StatisticsUrlInfo.VIDEO_INFO_URL + videoKey;
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -85,7 +79,7 @@ public class VodStatistics {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         JsonObject videoDetailJson =  jsonObject.get("VideoDetail").getAsJsonObject();
                         cuePointArray = videoDetailJson.get("CuePointList").getAsJsonArray();
-                        fetchVideoStatistics(videoKey);
+                        fetchVideoStatsInfo(videoKey);
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -96,8 +90,9 @@ public class VodStatistics {
         RequestSingleton.getInstance(context).addToRequestQueue(request);
     }
 
-    private void fetchVideoStatistics(String videoKey){
-        String url = context.getResources().getString(R.string.videoStatsInfoUrl) + videoKey;
+    // 영상 통계정보 조회
+    private void fetchVideoStatsInfo(String videoKey){
+        String url = StatisticsUrlInfo.VIDEO_STATS_INFO_URL + videoKey;
         Log.d(TAG, "getVideoInfo() - url : " + url);
 
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
@@ -107,7 +102,7 @@ public class VodStatistics {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         videoInfo = (JsonObject) jsonObject.get("statsInfo");
                         videoInfo.remove("errorInfo");
-                        String ref = context.getResources().getString(R.string.httpsString) + context.getPackageName();
+                        String ref = "https://" + "com.scenappsm.android" + "/";
                         videoInfo.addProperty("ref", Base64.encodeToString(ref.getBytes(), 0));
                         videoInfo.addProperty("e", "pl");
                         videoInfo.addProperty("fv", "0.0.0");
@@ -126,7 +121,7 @@ public class VodStatistics {
     }
 
     private void playerLoadStatistics(){
-        String url = context.getResources().getString(R.string.videoPlaysUrl) + videoInfo.toString();
+        String url = StatisticsUrlInfo.VIDEO_PLAYS_URL + videoInfo.toString();
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -165,7 +160,7 @@ public class VodStatistics {
                     playStatisticsInfo.remove("det");
                     startTime = 0;
                     currentTime = 0;
-                    String url = context.getResources().getString(R.string.videoPlaysUrl) + playStatisticsInfo.toString();
+                    String url = StatisticsUrlInfo.VIDEO_PLAYS_URL + playStatisticsInfo.toString();
                     CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
                             new Response.Listener<String>() {
                                 @Override
@@ -194,7 +189,7 @@ public class VodStatistics {
                     videoInfo.addProperty("dtt", duration);
                     videoInfo.addProperty("dst", startTime);
                     videoInfo.addProperty("det", currentTime);
-                    sendLog(playsUrl, videoInfo);
+                    sendLog(StatisticsUrlInfo.VIDEO_PLAYS_URL, videoInfo);
                     reset();
                     mTimer = null;
                 }
@@ -207,7 +202,7 @@ public class VodStatistics {
                     videoInfo.addProperty("dtt", duration);
                     videoInfo.addProperty("dst", startTime);
                     videoInfo.addProperty("det", currentTime);
-                    sendLog(playsUrl, videoInfo);
+                    sendLog(StatisticsUrlInfo.VIDEO_PLAYS_URL, videoInfo);
                 }
                 break;
             case SEEK:
@@ -219,7 +214,7 @@ public class VodStatistics {
                     videoInfo.addProperty("e", "vk");
                     startTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
                     currentTime = (int)TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getCurrentPosition());
-                    sendLog(playsUrl, videoInfo);
+                    sendLog(StatisticsUrlInfo.VIDEO_PLAYS_URL, videoInfo);
                 }
                 break;
         }
@@ -236,7 +231,7 @@ public class VodStatistics {
                 ccObject.addProperty("pid", cuePointArray.get(i).getAsJsonObject().get("package_id").getAsInt());
                 ccObject.addProperty("cpid",cuePointArray.get(i).getAsJsonObject().get("cue_point_id").getAsInt());
                 ccObject.addProperty("e", "cc");
-                sendLog(cuePointUrl, ccObject);
+                sendLog(StatisticsUrlInfo.CUE_POINT_URL, ccObject);
             }
         }
     }
@@ -262,7 +257,7 @@ public class VodStatistics {
                                     cvObject.addProperty("pid", cuePointArray.get(i).getAsJsonObject().get("package_id").getAsInt());
                                     cvObject.addProperty("cpid", cuePointArray.get(i).getAsJsonObject().get("cue_point_id").getAsInt());
                                     cvObject.addProperty("e", "cv");
-                                    sendLog(cuePointUrl, cvObject);
+                                    sendLog(StatisticsUrlInfo.CUE_POINT_URL, cvObject);
                                 }
                             }
                         }
@@ -271,7 +266,7 @@ public class VodStatistics {
                             playsObject.addProperty("dtt", duration);
                             playsObject.addProperty("dst", startTime);
                             playsObject.addProperty("det", currentTime);
-                            sendLog(playsUrl, playsObject);
+                            sendLog(StatisticsUrlInfo.VIDEO_PLAYS_URL, playsObject);
                             startTime = currentTime;
                         }
 
@@ -304,7 +299,7 @@ public class VodStatistics {
                             sectionInfo.remove("ref");
                             sectionInfo.remove("e");
                             sectionInfo.remove("fv");
-                            sendLog(sectionsUrl, sectionInfo);
+                            sendLog(StatisticsUrlInfo.SECTIONS_URL, sectionInfo);
                         }
                     }
             }

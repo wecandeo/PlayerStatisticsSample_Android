@@ -114,6 +114,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         wecandeoVideo = new WecandeoVideo();
         wecandeoVideo.setDrm(isDrm);
         if(isDrm){
+            // DRM 영상인 경우, 발급된 videoId, videoKey, gId, scretKey, packageId 셋팅 이후, 통계 연동 객체 생성
             wecandeoVideo.setVideoKey(getResources().getString(R.string.videoKey));
             wecandeoVideo.setgId(getResources().getString(R.string.gId));
             wecandeoVideo.setPackageId(getResources().getString(R.string.packageId));
@@ -123,11 +124,13 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
             wecandeoSdk.setDebugTextView(debugText);
             //기본 컨트롤 뷰사용
-            wecandeoSdk.setUseController(true);
+            wecandeoSdk.setUseController(false);
             // 통계 연동
             vodStatistics = new VodStatistics(this);
         }else{
-            String url = getResources().getString(R.string.videoInfoUrl) + getResources().getString(R.string.videoKey);
+            // DRM 영상이 아닌 경우, 발급된 videoKey 값을 이용하여 영상 상세정보를 조회한 뒤,
+            // videoUrl 값을 가져와서 Player 를 구성합니다.
+            String url = StatisticsUrlInfo.VIDEO_INFO_URL + getResources().getString(R.string.videoKey);
             CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
                     new Response.Listener<String>() {
                         @Override
@@ -140,7 +143,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                             wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
                             wecandeoSdk.setDebugTextView(debugText);
                             //기본 컨트롤 뷰사용
-                            wecandeoSdk.setUseController(true);
+                            wecandeoSdk.setUseController(false);
                             // 통계 연동
                             vodStatistics = new VodStatistics(getApplicationContext());
                             wecandeoSdk.onStart();
@@ -297,12 +300,11 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        // 영상이 로드되고 처음 준비 시
+        // 영상이 로드되고 처음 준비가 되면 셋팅
         if(playbackState == PLAY_ENABLE && wecandeoSdk.getPlayer() != null && isInitVideoInfo){
             isInitVideoInfo = false;
             vodStatistics.setWecandeoSdk(wecandeoSdk);
             vodStatistics.setDuration(TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getDuration()));
-            // 큐포인트 정보, 비디오 정보
             vodStatistics.fetchVideoDetail(getResources().getString(R.string.videoKey));
         }
 

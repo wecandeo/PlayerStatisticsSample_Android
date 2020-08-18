@@ -1,9 +1,12 @@
 package com.scenappsm.android.wcPlayerStatistics;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -24,6 +27,7 @@ import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
 
 import java.util.concurrent.TimeUnit;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
@@ -43,6 +47,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
     // 풀스크린 여부
     private boolean isFullscreen = false;
+    private boolean isPlayEnabled = false;
 
     private static final String TAG = "LiveActivity";
     private static final int PLAY_ENABLE = 3; // 즉시 플레이 가능
@@ -59,8 +64,8 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
     private void initViews(){
         mainLayout = findViewById(R.id.main_layout);
-        liveParent = findViewById(R.id.player_parent);
-        simpleExoPlayerView = findViewById(R.id.player_view);
+        liveParent = findViewById(R.id.live_parent);
+        simpleExoPlayerView = findViewById(R.id.live_view);
         stopButton = findViewById(R.id.stop_button);
         stopButton.setOnClickListener(this);
         playButton = findViewById(R.id.play_button);
@@ -72,27 +77,37 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         wecandeoSdk.setSdkListener(this);
         wecandeoSdk.addPlayerListener(this);
         wecandeoVideo = new WecandeoVideo();
-        wecandeoVideo.setDrm(false);
         initVideoInfo();
     }
 
     private void initVideoInfo(){
-        String url = getResources().getString(R.string.videoInfoUrl) + getResources().getString(R.string.videoKey);
+        String url = StatisticsUrlInfo.LIVE_INFO_URL + getResources().getString(R.string.liveKey);
         CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         JsonObject videoDetailObject = jsonObject.get("VideoDetail").getAsJsonObject();
-                        String videoKey = videoDetailObject.get("videoUrl").getAsString();
-                        wecandeoVideo.setVideoKey(videoKey);
-                        wecandeoSdk.setWecandeoVideo(wecandeoVideo);
-                        wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
-                        //기본 컨트롤 뷰사용
-                        wecandeoSdk.setUseController(true);
-                        // 통계 연동
-                        liveStatistics = new LiveStatistics(getApplicationContext());
-                        wecandeoSdk.onStart();
+                        JsonObject errorInfo = videoDetailObject.get("errorInfo").getAsJsonObject();
+                        if(errorInfo.get("errorCode").getAsString().equals("NotStarted")){
+                            isPlayEnabled = false;
+                            ViewGroup.LayoutParams params = simpleExoPlayerView.getLayoutParams();
+                            params.height = 800;
+                            simpleExoPlayerView.setLayoutParams(params);
+                            Toast.makeText(getApplicationContext(),"아직 방송시간이 아닙니다.",Toast.LENGTH_LONG).show();
+                        }else{
+                            isPlayEnabled = true;
+                            String videoKey = videoDetailObject.get("videoUrl").getAsString();
+                            wecandeoVideo.setDrm(false);
+                            wecandeoVideo.setVideoKey(videoKey);
+                            wecandeoSdk.setWecandeoVideo(wecandeoVideo);
+                            wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
+                            //기본 컨트롤 뷰사용
+                            wecandeoSdk.setUseController(false);
+                            // 통계 연동
+                            liveStatistics = new LiveStatistics(getApplicationContext(), getResources().getString(R.string.liveKey));
+                            wecandeoSdk.onStart();
+                        }
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -106,7 +121,16 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v){
         switch (v.getId()){
-
+            case R.id.play_button :
+                if(isPlayEnabled){
+                    liveStatistics.sendStatistics(LiveStatistics.PLAY);
+                }
+                break;
+            case R.id.stop_button :
+                if(isPlayEnabled){
+                    liveStatistics.sendStatistics(LiveStatistics.STOP);
+                }
+                break;
         }
     }
 
@@ -146,14 +170,12 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        if(playbackState == PLAY_ENABLE && wecandeoSdk.getPlayer() != null && isInitVideoInfo){
-            isInitVideoInfo = false;
-
-        }
+        Log.d(TAG, "playWhenReady : " + playWhenReady + ", playbackState : " + playbackState);
 
         // 영상이 완료되었을 때
         if(playWhenReady && playbackState == PLAY_COMPLETE && wecandeoSdk.getPlayer() != null){
-
+            wecandeoSdk.complete();
+            liveStatistics.sendStatistics(LiveStatistics.STOP);
         }
     }
 
