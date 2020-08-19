@@ -1,6 +1,7 @@
 package com.scenappsm.android.wcPlayerStatistics;
 
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 
 import com.android.volley.Request;
@@ -8,9 +9,6 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.scenappsm.wecandeosdkplayer.WecandeoSdk;
-
-import java.sql.Time;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -21,11 +19,12 @@ public class LiveStatistics {
     private Timer mTimer;
 
     private static final String TAG = "LiveStatistics";
-
     public static final String PLAY = "PLAY";
     public static final String STOP = "STOP";
+
     private JsonObject liveInfo;
     String videoKey;
+    boolean isPlaying = false;
 
     public LiveStatistics(Context context, String key){
         this.context = context;
@@ -38,9 +37,10 @@ public class LiveStatistics {
                 fetchLiveStatsInfo(videoKey);
                 break;
             case STOP :
-                if(mTimer != null){
+                if(context != null && mTimer != null){
                     mTimer.cancel();
                     mTimer = null;
+                    isPlaying = false;
                     liveInfo.addProperty("e", "lt");
                     JsonObject endJson = JsonParser.parseString(liveInfo.toString()).getAsJsonObject();
                     sendLog(endJson);
@@ -48,7 +48,9 @@ public class LiveStatistics {
         }
     }
 
+    // 라이브 통계정보 조회
     private void fetchLiveStatsInfo(String key){
+        isPlaying = true;
         String url = StatisticsUrlInfo.LIVE_STATS_INFO_URL + key;
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
                 new Response.Listener<String>() {
@@ -57,7 +59,10 @@ public class LiveStatistics {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         liveInfo = (JsonObject) jsonObject.get("statsInfo");
                         liveInfo.remove("errorInfo");
+                        liveInfo.addProperty("fv", "0.0.0");
                         liveInfo.addProperty("e", "ls");
+                        String ref = "https://" + context.getPackageName();
+                        liveInfo.addProperty("ref", Base64.encodeToString(ref.getBytes(), Base64.NO_WRAP));
                         JsonObject startJson = JsonParser.parseString(liveInfo.toString()).getAsJsonObject();
                         sendLog(startJson);
                         timeUpdate();

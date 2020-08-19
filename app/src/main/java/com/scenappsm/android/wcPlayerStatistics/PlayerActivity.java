@@ -1,11 +1,11 @@
 package com.scenappsm.android.wcPlayerStatistics;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -25,23 +25,20 @@ import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 public class PlayerActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener, SdkInterface.onSdkListener{
     WecandeoSdk wecandeoSdk;
     WecandeoVideo wecandeoVideo;
-    boolean isDrm = true;
-
-    VodStatistics vodStatistics;
+    boolean isDrm = true; // DRM 여부
+    VodStatistics vodStatistics; // 통계 연동 객체
 
     private static final String TAG = "PlayerActivity";
     private static final int PLAY_ENABLE = 3; // 즉시 플레이 가능
     private static final int PLAY_COMPLETE = 4; // 플레이 완료
-    boolean isInitVideoInfo = true;
-
-    boolean isPlaying = false;
+    boolean isInitVideoInfo = true; // 플레이어가 준비 완료되면 true 이후 false (최초 한번만 실행)
+    boolean isPlaying = false; // 재생 시작 여부
 
     // 풀스크린 여부
     private boolean isFullscreen = false;
@@ -128,8 +125,11 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             // 통계 연동
             vodStatistics = new VodStatistics(this);
         }else{
-            // DRM 영상이 아닌 경우, 발급된 videoKey 값을 이용하여 영상 상세정보를 조회한 뒤,
-            // videoUrl 값을 가져와서 Player 를 구성합니다.
+            /*
+            * DRM 영상이 아닌 경우, 발급된 videoKey 값을 이용하여 영상 상세정보를 조회한 뒤,
+            * videoUrl 값을 가져와서 Player 를 구성합니다.
+            * Player 구성 이후, 통계 연동 객체를 생성합니다.
+            * */
             String url = StatisticsUrlInfo.VIDEO_INFO_URL + getResources().getString(R.string.videoKey);
             CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
                     new Response.Listener<String>() {
@@ -137,6 +137,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                         public void onResponse(String response) {
                             JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                             JsonObject videoDetailObject = jsonObject.get("VideoDetail").getAsJsonObject();
+                            Log.d(TAG, "videoDetail : " + videoDetailObject.toString());
                             String videoKey = videoDetailObject.get("videoUrl").getAsString();
                             wecandeoVideo.setVideoKey(videoKey);
                             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
@@ -188,7 +189,8 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onDestroy(){
-        vodStatistics.onDestroy();
+        if(vodStatistics != null)
+            vodStatistics.onDestroy();
         super.onDestroy();
     }
 
@@ -300,7 +302,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        // 영상이 로드되고 처음 준비가 되면 셋팅
+        // 영상이 로드되고 준비가 되면 통계 연동 셋팅
         if(playbackState == PLAY_ENABLE && wecandeoSdk.getPlayer() != null && isInitVideoInfo){
             isInitVideoInfo = false;
             vodStatistics.setWecandeoSdk(wecandeoSdk);

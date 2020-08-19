@@ -3,11 +3,9 @@ package com.scenappsm.android.wcPlayerStatistics;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Handler;
 import android.util.Base64;
 import android.util.Log;
-
 import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
@@ -15,12 +13,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.scenappsm.wecandeosdkplayer.WecandeoSdk;
-import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
@@ -41,18 +33,17 @@ public class VodStatistics {
     private JsonObject playStatisticsInfo;
     JsonArray cuePointArray;
 
-    private long duration;
-    private int startTime;
-    private int currentTime;
+    private long duration; // 플레이어 총 재생시간
+    private int startTime; // 플레이어 시작 시간
+    private int currentTime; // 플레이어 현재 시간
     private int intervalTime = 10;
     private int section = 0;
     private static final int PERCENT = 10;
 
-    boolean isRetry = false;
-    boolean isInitPlay = true;
+    boolean isRetry = false; // 재시작 여부
+    boolean isInitPlay = true; // 영상 처음 재생 여부
     boolean isStopped = false;
     boolean isPaused = false;
-
     private TimerTask mTask;
     private Timer mTimer;
 
@@ -102,8 +93,8 @@ public class VodStatistics {
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         videoInfo = (JsonObject) jsonObject.get("statsInfo");
                         videoInfo.remove("errorInfo");
-                        String ref = "https://" + "com.scenappsm.android" + "/";
-                        videoInfo.addProperty("ref", Base64.encodeToString(ref.getBytes(), 0));
+                        String ref = "https://" + context.getPackageName();
+                        videoInfo.addProperty("ref", Base64.encodeToString(ref.getBytes(), Base64.NO_WRAP));
                         videoInfo.addProperty("e", "pl");
                         videoInfo.addProperty("fv", "0.0.0");
                         for(int i = 0; i < cuePointArray.size(); i++){
@@ -120,6 +111,7 @@ public class VodStatistics {
         RequestSingleton.getInstance(context).addToRequestQueue(request);
     }
 
+    // 플레이어 로드 통계 전송
     private void playerLoadStatistics(){
         String url = StatisticsUrlInfo.VIDEO_PLAYS_URL + videoInfo.toString();
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
@@ -340,7 +332,7 @@ public class VodStatistics {
     }
 
     public void onDestroy(){
-        if(mTimer != null && !isStopped){
+        if(context != null && mTimer != null && !isStopped){
             sendStatistics(STOP);
         }
     }

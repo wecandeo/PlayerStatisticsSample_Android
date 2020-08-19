@@ -1,8 +1,6 @@
 package com.scenappsm.android.wcPlayerStatistics;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -24,10 +22,6 @@ import com.google.gson.JsonParser;
 import com.scenappsm.wecandeosdkplayer.SdkInterface;
 import com.scenappsm.wecandeosdkplayer.WecandeoSdk;
 import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
-
-import java.util.concurrent.TimeUnit;
-
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
@@ -39,20 +33,18 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
     Button stopButton;
     Button playButton;
+    Button fullscreenButton;
 
     WecandeoSdk wecandeoSdk;
     WecandeoVideo wecandeoVideo;
 
     LiveStatistics liveStatistics;
 
-    // 풀스크린 여부
-    private boolean isFullscreen = false;
-    private boolean isPlayEnabled = false;
+    private boolean isFullscreen = false; // 풀스크린 여부
+    private boolean isPlayEnabled = false; // Live 재생 가능 여부
 
     private static final String TAG = "LiveActivity";
-    private static final int PLAY_ENABLE = 3; // 즉시 플레이 가능
     private static final int PLAY_COMPLETE = 4; // 플레이 완료
-    boolean isInitVideoInfo = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,6 +52,13 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_live);
         initViews();
         initWecanedoSetting();
+    }
+
+    @Override
+    public void onDestroy(){
+        if(liveStatistics != null)
+            liveStatistics.sendStatistics(LiveStatistics.STOP);
+        super.onDestroy();
     }
 
     private void initViews(){
@@ -70,6 +69,8 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         stopButton.setOnClickListener(this);
         playButton = findViewById(R.id.play_button);
         playButton.setOnClickListener(this);
+        fullscreenButton =findViewById(R.id.full_screen_button);
+        fullscreenButton.setOnClickListener(this);
     }
 
     private void initWecanedoSetting(){
@@ -80,6 +81,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         initVideoInfo();
     }
 
+    // videoKey 를 이용하여 영상 상세정보 조회하여 videoUrl 로 Player 구성
     private void initVideoInfo(){
         String url = StatisticsUrlInfo.LIVE_INFO_URL + getResources().getString(R.string.liveKey);
         CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
@@ -89,13 +91,14 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                         JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                         JsonObject videoDetailObject = jsonObject.get("VideoDetail").getAsJsonObject();
                         JsonObject errorInfo = videoDetailObject.get("errorInfo").getAsJsonObject();
-                        if(errorInfo.get("errorCode").getAsString().equals("NotStarted")){
+                        if(!errorInfo.get("errorCode").getAsString().equals("None")){
                             isPlayEnabled = false;
                             ViewGroup.LayoutParams params = simpleExoPlayerView.getLayoutParams();
                             params.height = 800;
                             simpleExoPlayerView.setLayoutParams(params);
                             Toast.makeText(getApplicationContext(),"아직 방송시간이 아닙니다.",Toast.LENGTH_LONG).show();
                         }else{
+                            // 현재 LIVE 방송 중일 경우 video setting
                             isPlayEnabled = true;
                             String videoKey = videoDetailObject.get("videoUrl").getAsString();
                             wecandeoVideo.setDrm(false);
@@ -123,14 +126,31 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()){
             case R.id.play_button :
                 if(isPlayEnabled){
+                    wecandeoSdk.play();
                     liveStatistics.sendStatistics(LiveStatistics.PLAY);
                 }
                 break;
             case R.id.stop_button :
                 if(isPlayEnabled){
+                    wecandeoSdk.stop();
                     liveStatistics.sendStatistics(LiveStatistics.STOP);
                 }
                 break;
+            case R.id.full_screen_button :
+                if(isFullscreen)
+                    closeFullscreenDialog();
+                else
+                    openFullscreenDialog();
+                break;
+        }
+    }
+
+    @Override
+    public void onBackPressed(){
+        if(isFullscreen){
+            closeFullscreenDialog();
+        }else{
+            super.onBackPressed();
         }
     }
 
@@ -170,7 +190,6 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-        Log.d(TAG, "playWhenReady : " + playWhenReady + ", playbackState : " + playbackState);
 
         // 영상이 완료되었을 때
         if(playWhenReady && playbackState == PLAY_COMPLETE && wecandeoSdk.getPlayer() != null){
