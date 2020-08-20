@@ -40,7 +40,7 @@ android:networkSecurityConfig="@xml/network_security_config">
 - DRM
   - 발급된 videoId, videoKey, gId, scretKey, packageId 를 통해 Player 구성
 - Non DRM
-  - 발급된 videoKey 로 영상 상세정보 조회를 하여 videoUrl 값을 이용하여 Player 구성
+  - 발급된 videoKey 로 영상 상세정보 조회를 하여 나온 videoUrl 값을 이용하여 Player 구성
 - 공통
   - Player 구성 이후 VodStatistics 객체 생성
      ```
@@ -88,7 +88,7 @@ public void sendStatistics(String state)
 
 ## Live
 ### Player 구성 방법
-- 발급된 videoKey 로 영상 상세정보 조회를 하여 videoUrl 값을 이용하여 Player 구성
+- 발급된 videoKey 로 영상 상세정보 조회를 하여 나온 videoUrl 값을 이용하여 Player 구성
 - Player 구성 이후 통계 연동을 위한 LiveStatistics 객체 생성
 ```
 liveStatistics = new LiveStatistics(getApplicationContext(), "videoKey");

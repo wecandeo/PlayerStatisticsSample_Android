@@ -47,6 +47,9 @@ public class VodStatistics {
     private TimerTask mTask;
     private Timer mTimer;
 
+    private static final int DELAY_TIME = 100;
+    private static final int PERIOD_TIME = 1000;
+
 
     public VodStatistics(Context context){
         this.context = context;
@@ -297,7 +300,7 @@ public class VodStatistics {
             }
         };
         mTimer = new Timer();
-        mTimer.schedule(mTask, 100, 1000);
+        mTimer.schedule(mTask, DELAY_TIME, PERIOD_TIME);
     }
 
     private void sendLog(String url, JsonObject resultObject){

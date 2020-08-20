@@ -26,6 +26,9 @@ public class LiveStatistics {
     String videoKey;
     boolean isPlaying = false;
 
+    private static final int DELAY_TIME = 500;
+    private static final int INTERVAL_TIME = 5000;
+
     public LiveStatistics(Context context, String key){
         this.context = context;
         videoKey = key;
@@ -85,7 +88,7 @@ public class LiveStatistics {
             }
         };
         mTimer = new Timer();
-        mTimer.schedule(mTask, 500, 5000);
+        mTimer.schedule(mTask, DELAY_TIME, INTERVAL_TIME);
     }
 
     private void sendLog(JsonObject jsonObject){
