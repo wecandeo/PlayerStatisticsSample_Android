@@ -36,7 +36,7 @@ android:networkSecurityConfig="@xml/network_security_config">
     </network-security-config>
   ```  
 
-### 4. - LiveStatistics, VodStatistics, StatisticsUrlInfo, RequestSingleton Class 는 수정하지 않고 사용
+### 4. LiveStatistics, VodStatistics, StatisticsUrlInfo, RequestSingleton Class 는 수정하지 않고 사용
 
 ## VOD
 ### Player 구성 방법

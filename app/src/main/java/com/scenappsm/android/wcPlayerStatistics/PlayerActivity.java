@@ -146,7 +146,6 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                         public void onResponse(String response) {
                             JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                             JsonObject videoDetailObject = jsonObject.get("VideoDetail").getAsJsonObject();
-                            Log.d(TAG, "videoDetail : " + videoDetailObject.toString());
                             String videoUrl = videoDetailObject.get("videoUrl").getAsString();
                             wecandeoVideo.setVideoKey(videoUrl);
                             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
