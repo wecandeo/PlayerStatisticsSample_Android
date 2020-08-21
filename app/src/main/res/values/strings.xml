@@ -2,15 +2,6 @@
     <string name="app_name">androidwcPlayerStatistics</string>
     <string name="vod_button">VOD PLAYER</string>
     <string name="live_button">LIVE PLAYER</string>
-    <!-- drm 정보 -->
-    <string name="videoKey">BOKNS9AQWrEzo3nVip5Fip3AwjosQWTPOSU2GeYMy3AGL1YTnKcO6bnyho4pqLKNis4ZCy4IG7kZTQ431147TteoAieie</string>
-    <string name="gId">2209</string>
-    <string name="packageId">1006725</string>
-    <string name="videoId">6853267</string>
-    <string name="secretKey">Xxm+WW4tUAW4Mxa15eKuCncQl7Sj1UDKmYK/RTUzLWs=</string>
-
-    <!-- live key -->
-    <string name="liveKey">aEsfllqxfGf1zipHkpYZrK4dPS6RDG4dWaxSkKxUXQBDtVwlzuzzeisAieie</string>
 
     <!-- button text -->
     <string name="retry">RETRY</string>

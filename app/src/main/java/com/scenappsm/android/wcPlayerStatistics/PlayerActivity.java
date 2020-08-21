@@ -31,7 +31,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 public class PlayerActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener, SdkInterface.onSdkListener{
     WecandeoSdk wecandeoSdk;
     WecandeoVideo wecandeoVideo;
-    boolean isDrm = true; // DRM 여부
     VodStatistics vodStatistics; // 통계 연동 객체
 
     private static final String TAG = "PlayerActivity";
@@ -62,12 +61,22 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     List<Button> buttonList = new ArrayList<>();
 
+    boolean isDrm = false; // DRM 여부
+    String videoKey; // 영상의 videoKey 값
+    String gId; // DRM 영상인 경우에만 사용, 발급받은 gId 값
+    String packageId; // DRM 영상인 경우에만 사용, 발급받은 packageId 값
+    String videoId; // DRM 영상인 경우에만 사용, 발급받은 videoId 값
+    String secretKey; // DRM 영상인 경우에만 사용, 발급받은 secretKey 값
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
         initViews();
-        initWecandeoSetting();
+        if(videoKey != null && !videoKey.equals("")){
+            initWecandeoSetting();
+        }
     }
 
     private void initViews(){
@@ -112,11 +121,11 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         wecandeoVideo.setDrm(isDrm);
         if(isDrm){
             // DRM 영상인 경우, 발급된 videoId, videoKey, gId, scretKey, packageId 셋팅 이후, 통계 연동 객체 생성
-            wecandeoVideo.setVideoKey(getResources().getString(R.string.videoKey));
-            wecandeoVideo.setgId(getResources().getString(R.string.gId));
-            wecandeoVideo.setPackageId(getResources().getString(R.string.packageId));
-            wecandeoVideo.setVideoId(getResources().getString(R.string.videoId));
-            wecandeoVideo.setSecretKey(getResources().getString(R.string.secretKey));
+            wecandeoVideo.setVideoKey(videoKey);
+            wecandeoVideo.setgId(gId);
+            wecandeoVideo.setPackageId(packageId);
+            wecandeoVideo.setVideoId(videoId);
+            wecandeoVideo.setSecretKey(secretKey);
             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
             wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
             wecandeoSdk.setDebugTextView(debugText);
@@ -130,7 +139,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             * videoUrl 값을 가져와서 Player 를 구성합니다.
             * Player 구성 이후, 통계 연동 객체를 생성합니다.
             * */
-            String url = StatisticsUrlInfo.VIDEO_INFO_URL + getResources().getString(R.string.videoKey);
+            String url = StatisticsUrlInfo.VIDEO_INFO_URL + videoKey;
             CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
                     new Response.Listener<String>() {
                         @Override
@@ -138,8 +147,8 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                             JsonObject jsonObject = JsonParser.parseString(response).getAsJsonObject();
                             JsonObject videoDetailObject = jsonObject.get("VideoDetail").getAsJsonObject();
                             Log.d(TAG, "videoDetail : " + videoDetailObject.toString());
-                            String videoKey = videoDetailObject.get("videoUrl").getAsString();
-                            wecandeoVideo.setVideoKey(videoKey);
+                            String videoUrl = videoDetailObject.get("videoUrl").getAsString();
+                            wecandeoVideo.setVideoKey(videoUrl);
                             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
                             wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
                             wecandeoSdk.setDebugTextView(debugText);
@@ -152,7 +161,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                     }, new Response.ErrorListener() {
                 @Override
                 public void onErrorResponse(VolleyError error) {
-
+                    Log.d(TAG, "initWecandeoSetting() is error : " + error.getLocalizedMessage());
                 }
             });
             RequestSingleton.getInstance(getApplicationContext()).addToRequestQueue(request);
@@ -162,29 +171,29 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     @Override
     public void onStart(){
         super.onStart();
-        if(isDrm){
+        if(wecandeoSdk != null)
             wecandeoSdk.onStart();
-        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if(isDrm){
+        if(wecandeoSdk != null)
             wecandeoSdk.onResume();
-        }
     }
 
     @Override
     public void onPause(){
         super.onPause();
-        wecandeoSdk.onPause();
+        if(wecandeoSdk != null)
+            wecandeoSdk.onPause();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        wecandeoSdk.onStop();
+        if(wecandeoSdk != null)
+            wecandeoSdk.onStop();
     }
 
     @Override
@@ -307,7 +316,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             isInitVideoInfo = false;
             vodStatistics.setWecandeoSdk(wecandeoSdk);
             vodStatistics.setDuration(TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getDuration()));
-            vodStatistics.fetchVideoDetail(getResources().getString(R.string.videoKey));
+            vodStatistics.fetchVideoDetail(videoKey);
         }
 
         // 영상이 완료되었을 때

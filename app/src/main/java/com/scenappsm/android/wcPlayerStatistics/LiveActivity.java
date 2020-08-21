@@ -1,6 +1,7 @@
 package com.scenappsm.android.wcPlayerStatistics;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -46,12 +47,16 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     private static final String TAG = "LiveActivity";
     private static final int PLAY_COMPLETE = 4; // 플레이 완료
 
+    String liveKey; // 발급 받은 liveKey 값을 입력
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_live);
         initViews();
-        initWecanedoSetting();
+        if(liveKey != null && !liveKey.equals("")){
+            initWecandeoSetting();
+        }
     }
 
     @Override
@@ -73,7 +78,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         fullscreenButton.setOnClickListener(this);
     }
 
-    private void initWecanedoSetting(){
+    private void initWecandeoSetting(){
         wecandeoSdk = new WecandeoSdk(this);
         wecandeoSdk.setSdkListener(this);
         wecandeoSdk.addPlayerListener(this);
@@ -83,7 +88,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
 
     // videoKey 를 이용하여 영상 상세정보 조회하여 videoUrl 로 Player 구성
     private void initVideoInfo(){
-        String url = StatisticsUrlInfo.LIVE_INFO_URL + getResources().getString(R.string.liveKey);
+        String url = StatisticsUrlInfo.LIVE_INFO_URL + liveKey;
         CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
                 new Response.Listener<String>() {
                     @Override
@@ -108,14 +113,14 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                             //기본 컨트롤 뷰사용
                             wecandeoSdk.setUseController(false);
                             // 통계 연동
-                            liveStatistics = new LiveStatistics(getApplicationContext(), getResources().getString(R.string.liveKey));
+                            liveStatistics = new LiveStatistics(getApplicationContext(), liveKey);
                             wecandeoSdk.onStart();
                         }
                     }
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                Log.d(TAG, "initVideoInfo() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(getApplicationContext()).addToRequestQueue(request);
@@ -169,13 +174,15 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onPause(){
         super.onPause();
-        wecandeoSdk.onPause();
+        if(wecandeoSdk != null)
+            wecandeoSdk.onPause();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        wecandeoSdk.onStop();
+        if(wecandeoSdk != null)
+            wecandeoSdk.onStop();
     }
 
     @Override

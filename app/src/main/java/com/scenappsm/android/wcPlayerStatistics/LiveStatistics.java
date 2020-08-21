@@ -73,7 +73,7 @@ public class LiveStatistics {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d(TAG, "error : " + error);
+                Log.d(TAG, "fetchLiveStatsInfo() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(context).addToRequestQueue(request);
@@ -102,7 +102,7 @@ public class LiveStatistics {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d(TAG, "error : " + error);
+                Log.d(TAG, "sendLog() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(context).addToRequestQueue(request);

@@ -78,7 +78,7 @@ public class VodStatistics {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                Log.d(TAG, "fetchVideoDetail() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(context).addToRequestQueue(request);
@@ -87,7 +87,6 @@ public class VodStatistics {
     // 영상 통계정보 조회
     private void fetchVideoStatsInfo(String videoKey){
         String url = StatisticsUrlInfo.VIDEO_STATS_INFO_URL + videoKey;
-        Log.d(TAG, "getVideoInfo() - url : " + url);
 
         CustomStringRequest request = new CustomStringRequest(context, Request.Method.GET, url,
                 new Response.Listener<String>() {
@@ -108,7 +107,7 @@ public class VodStatistics {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-
+                Log.d(TAG, "fetchVideoStatsInfo() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(context).addToRequestQueue(request);
@@ -126,7 +125,7 @@ public class VodStatistics {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d(TAG, "requestVideoData is error!!! ");
+                Log.d(TAG, "playerLoadStatistics() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(context).addToRequestQueue(request);
@@ -160,13 +159,13 @@ public class VodStatistics {
                             new Response.Listener<String>() {
                                 @Override
                                 public void onResponse(String response) {
-                                    Log.d(TAG, "success, urlData : " + url);
+                                    Log.d(TAG, "success, data : " + url);
                                     timeUpdate(playStatisticsInfo);
                                 }
                             }, new Response.ErrorListener() {
                         @Override
                         public void onErrorResponse(VolleyError error) {
-                            Log.d(TAG, "sendStatistics is error!!! " + error.getLocalizedMessage());
+                            Log.d(TAG, "sendStatistics() is error : " + error.getLocalizedMessage());
                         }
                     });
                     RequestSingleton.getInstance(context).addToRequestQueue(request);
@@ -309,7 +308,7 @@ public class VodStatistics {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d(TAG, "success, urlData : " + urlData);
+                        Log.d(TAG, "success, data : " + urlData);
                         if(isRetry && isStopped){
                             new Handler().postDelayed(new Runnable() {
                                 @Override
@@ -323,7 +322,7 @@ public class VodStatistics {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.d(TAG, "sendStatistics is error!!! ");
+                Log.d(TAG, "sendLog() is error : " + error.getLocalizedMessage());
             }
         });
         RequestSingleton.getInstance(context).addToRequestQueue(request);

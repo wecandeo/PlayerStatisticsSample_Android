@@ -2,6 +2,9 @@
 
 ## **설정**
 
+### 사전에 조회할 값
+- 업데이트 예정
+
 ### 1. 라이브러리 추가
     implementation 'com.google.android.exoplayer:exoplayer:r2.5.1'
     implementation 'com.google.android.exoplayer:exoplayer-core:r2.5.1'
@@ -33,7 +36,7 @@ android:networkSecurityConfig="@xml/network_security_config">
     </network-security-config>
   ```  
 
-### 4. - LiveStatistics, VodStatistics, StatisticsUrlInfo, RequestSingleton Class 는 수정하지 않고 사용하시면 됩니다.
+### 4. - LiveStatistics, VodStatistics, StatisticsUrlInfo, RequestSingleton Class 는 수정하지 않고 사용
 
 ## VOD
 ### Player 구성 방법
