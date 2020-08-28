@@ -2,8 +2,29 @@
 
 ## **설정**
 
-### 사전에 조회할 값
-- 업데이트 예정
+### 사전에 조회할 값 설명
+### Statistics 공통
+WECANDEO 통계를 사용하기 위해서는 활성화 된 WECANDEO 계정이 있어야 합니다.
+먼저 [WECANDEO 홈페이지](https://www.wecandeo.com/) 에서 계정을 생성하고 플랜(Trial, Standard, Enterprise)에 [가입](https://www.wecandeo.com/pricing/videopack/edition/)하여 계정을 활성화 합니다.
+활성화 된 계정에 이용중인 상품이 *VideoPack*인 경우 VODStatistics를, *LivePack*인 경우 LiveStatistics 를 사용할 수 있습니다.
+
+[WECANDEO API](https://support.wecandeo.com/developer/)를 사용하여 필요한 값을 조회합니다.
+
+※ [WECANDEO API](https://support.wecandeo.com/developer/)를 사용하기 위해 필요한 `API Key`는 활성화 된 계정의 CMS에서 확인 가능합니다.[CMS > 계정관리 > 개발자 API]
+
+- VODStatistics
+  - videoKey : [동영상 배포 코드 조회 API](https://support.wecandeo.com/developer/video-pack-api/videos/video-data/video-pub-code/)를 호출하면 `videoKey` 를 확인할 수 있습니다.
+  - DRM 재생을 위한 값
+    - gid : [ CMS > 부가서비스 > Wecandeo DRM ] 메뉴에서 `gid`를 확인할 수 있습니다.
+    - secretKey : [ CMS > 부가서비스 > Wecandeo DRM ] 메뉴에서 `secretKey`를 확인할 수 있습니다.
+    - packageId : [배포 패키지 목록 조회 API](https://support.wecandeo.com/developer/video-pack-api/publish-package/package-list/)를 호출하면 `packageId`를 확인할 수 있습니다.
+    - videoId : [동영상 목록 - 배포 패키지별 조회 API](https://support.wecandeo.com/developer/video-pack-api/videos/video-data/video-list-package/)를 호출하면 `videoId`를 확인할 수 있습니다.
+
+※ DRM 기능을 사용하기 위해서는 사용 가능한 플랜(Enterprise)에 가입되어 있어야 하며, 관리자를 통해 해당 기능이 활성화 되어 있어야 합니다.
+
+- LiveStatistics
+  - liveKey : [CMS > 라이브 채널 > 채널 리스트 > 채널 선택 > 배포 코드] 메뉴에서 `liveKey`를 확인할 수 있습니다.
+
 
 ### 1. 라이브러리 추가
     implementation 'com.google.android.exoplayer:exoplayer:r2.5.1'
