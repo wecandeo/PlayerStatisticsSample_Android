@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">androidwcPlayerStatistics</string>
+    <string name="vod_button">VOD PLAYER</string>
+    <string name="live_button">LIVE PLAYER</string>
+
+    <!-- button text -->
+    <string name="retry">RETRY</string>
+    <string name="stop">STOP</string>
+    <string name="play">PLAY</string>
+    <string name="pause">PAUSE</string>
+    <string name="mute">음소거</string>
+    <string name="volumeUp">볼륨업</string>
+    <string name="volumeDown">볼륨다운</string>
+    <string name="rewind">REWIND</string>
+    <string name="forward">FORWARD</string>
+    <string name="fullScreen">FULLSCREEN</string>
+    <string name="actionText">Action : </string>
+</resources>
