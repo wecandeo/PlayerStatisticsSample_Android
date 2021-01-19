@@ -15,4 +15,12 @@
     <string name="forward">FORWARD</string>
     <string name="fullScreen">FULLSCREEN</string>
     <string name="actionText">Action : </string>
+
+    <string-array name="resize_array">
+        <item>RESIZE_MODE_FIT</item>
+        <item>RESIZE_MODE_FIXED_WIDTH</item>
+        <item>RESIZE_MODE_FIXED_HEIGHT</item>
+        <item>RESIZE_MODE_FILL</item>
+        <item>RESIZE_MODE_ZOOM</item>
+    </string-array>
 </resources>
