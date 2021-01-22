@@ -2,9 +2,13 @@ package com.scenappsm.android.wcPlayerStatistics;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -26,7 +30,7 @@ import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-public class LiveActivity extends AppCompatActivity implements View.OnClickListener, ExoPlayer.EventListener, SdkInterface.onSdkListener{
+public class LiveActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, ExoPlayer.EventListener, SdkInterface.onSdkListener{
 
     ConstraintLayout mainLayout;
     ConstraintLayout liveParent;
@@ -35,6 +39,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     Button stopButton;
     Button playButton;
     Button fullscreenButton;
+    Spinner resizeSpinner;
 
     WecandeoSdk wecandeoSdk;
     WecandeoVideo wecandeoVideo;
@@ -76,6 +81,23 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         playButton.setOnClickListener(this);
         fullscreenButton =findViewById(R.id.full_screen_button);
         fullscreenButton.setOnClickListener(this);
+        resizeSpinner = findViewById(R.id.resize_spinner);
+        ArrayAdapter<CharSequence> resizeSpinnerAdapter = ArrayAdapter.createFromResource(this, R.array.resize_array, android.R.layout.simple_spinner_item);
+        resizeSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        resizeSpinner.setAdapter(resizeSpinnerAdapter);
+        resizeSpinner.setOnItemSelectedListener(this);
+        resizeSpinner.bringToFront();
+        simpleExoPlayerView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if(resizeSpinner.getVisibility() == View.VISIBLE){
+                    resizeSpinner.setVisibility(View.INVISIBLE);
+                }else{
+                    resizeSpinner.setVisibility(View.VISIBLE);
+                }
+                return false;
+            }
+        });
     }
 
     private void initWecandeoSetting(){
@@ -86,7 +108,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         initVideoInfo();
     }
 
-    // liveKey 를 이용하여 영상 상세정보 조회하여 videoUrl 로 Player 구성
+    // videoKey 를 이용하여 영상 상세정보 조회하여 videoUrl 로 Player 구성
     private void initVideoInfo(){
         String url = StatisticsUrlInfo.LIVE_INFO_URL + liveKey;
         CustomStringRequest request = new CustomStringRequest(getApplicationContext(), Request.Method.GET, url,
@@ -105,9 +127,9 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                         }else{
                             // 현재 LIVE 방송 중일 경우 video setting
                             isPlayEnabled = true;
-                            String videoUrl = videoDetailObject.get("videoUrl").getAsString();
+                            String videoKey = videoDetailObject.get("videoUrl").getAsString();
                             wecandeoVideo.setDrm(false);
-                            wecandeoVideo.setVideoKey(videoUrl);
+                            wecandeoVideo.setVideoKey(videoKey);
                             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
                             wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
                             //기본 컨트롤 뷰사용
@@ -149,6 +171,15 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
+
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+        if(wecandeoSdk != null)
+            wecandeoSdk.setResizeMode(position);
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> parent) {}
 
     @Override
     public void onBackPressed(){
