@@ -27,9 +27,7 @@ WECANDEO 통계를 사용하기 위해서는 활성화 된 WECANDEO 계정이 �
 
 
 ### 1. 라이브러리 추가
-    implementation 'com.google.android.exoplayer:exoplayer:r2.5.1'
-    implementation 'com.google.android.exoplayer:exoplayer-core:r2.5.1'
-    implementation 'com.google.android.exoplayer:exoplayer-ui:r2.5.1'
+    implementation 'com.google.android.exoplayer:exoplayer:2.12.1'
     implementation 'com.android.volley:volley:1.1.1'
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation files('libs/WecandeoPlaySdk.jar')
@@ -41,21 +39,11 @@ WECANDEO 통계를 사용하기 위해서는 활성화 된 WECANDEO 계정이 �
 <uses-permission android:name="android.permission.INTERNET" />
 ```
 
-### 3. AndroidManifest.xml 에 networkSecurityConfig 설정
+### 3. AndroidManifest.xml application 태그 안에 usesCleartextTraffic 설정
 ```
 <application
-...
-android:networkSecurityConfig="@xml/network_security_config">
-```
-- res 폴더 안에 xml 폴더 추가 / xml 폴더에 network_security_config.xml 파일 추가
-  - netowkr_security_config.xml 내용
-  ```
-    <?xml version="1.0" encoding="utf-8"?>
-    <network-security-config>
-        <!--Set application-wide security config using base-config tag.-->
-        <base-config cleartextTrafficPermitted="true"/>
-    </network-security-config>
-  ```  
+android:usesCleartextTraffic="true">
+```  
 
 ### 4. LiveStatistics, VodStatistics, StatisticsUrlInfo, RequestSingleton Class 는 수정하지 않고 사용
 

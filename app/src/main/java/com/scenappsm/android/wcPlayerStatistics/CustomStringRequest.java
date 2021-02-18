@@ -48,7 +48,7 @@ public class CustomStringRequest extends StringRequest {
         }catch(PackageManager.NameNotFoundException e){
             e.printStackTrace();
         }
-        Map<String, String> headers = new HashMap<String, String>();
+        Map<String, String> headers = new HashMap<>();
         headers.put("User-agent", userAgentInfo);
         return headers;
     }

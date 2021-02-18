@@ -21,7 +21,7 @@
             android:background="@color/colorPrimaryDark"
             app:layout_constraintStart_toStartOf="@+id/live_parent"
             app:layout_constraintTop_toTopOf="@+id/live_parent"/>
-        <com.google.android.exoplayer2.ui.SimpleExoPlayerView
+        <com.google.android.exoplayer2.ui.PlayerView
             android:id="@+id/live_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

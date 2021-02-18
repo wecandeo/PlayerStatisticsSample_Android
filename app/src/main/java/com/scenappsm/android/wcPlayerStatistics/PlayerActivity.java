@@ -14,13 +14,12 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.scenappsm.wecandeosdkplayer.SdkInterface;
@@ -32,14 +31,12 @@ import java.util.concurrent.TimeUnit;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-public class PlayerActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, ExoPlayer.EventListener, SdkInterface.onSdkListener{
+public class PlayerActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, Player.EventListener, SdkInterface.onSdkListener{
     WecandeoSdk wecandeoSdk;
     WecandeoVideo wecandeoVideo;
     VodStatistics vodStatistics; // 통계 연동 객체
 
     private static final String TAG = "PlayerActivity";
-    private static final int PLAY_ENABLE = 3; // 즉시 플레이 가능
-    private static final int PLAY_COMPLETE = 4; // 플레이 완료
     boolean isInitVideoInfo = true; // 플레이어가 준비 완료되면 true 이후 false (최초 한번만 실행)
     boolean isPlaying = false; // 재생 시작 여부
 
@@ -48,7 +45,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     ConstraintLayout mainLayout;
     ConstraintLayout playerParent;
-    SimpleExoPlayerView simpleExoPlayerView;
+    PlayerView playerView;
 
     Button retryButton;
     Button stopButton;
@@ -87,7 +84,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     private void initViews(){
         mainLayout = findViewById(R.id.main_layout);
         playerParent = findViewById(R.id.player_parent);
-        simpleExoPlayerView = findViewById(R.id.player_view);
+        playerView = findViewById(R.id.player_view);
         retryButton = findViewById(R.id.retry_button);
         retryButton.setOnClickListener(this);
         stopButton = findViewById(R.id.stop_button);
@@ -121,7 +118,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         actionText = findViewById(R.id.action_text);
         debugText = findViewById(R.id.debug_text);
         resizeSpinner.bringToFront();
-        simpleExoPlayerView.setOnTouchListener(new View.OnTouchListener() {
+        playerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if(resizeSpinner.getVisibility() == View.VISIBLE){
@@ -150,7 +147,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
             wecandeoVideo.setVideoId(videoId);
             wecandeoVideo.setSecretKey(secretKey);
             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
-            wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
+            wecandeoSdk.setPlayerView(playerView);
             wecandeoSdk.setDebugTextView(debugText);
             //기본 컨트롤 뷰사용
             wecandeoSdk.setUseController(false);
@@ -172,7 +169,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                             String videoUrl = videoDetailObject.get("videoUrl").getAsString();
                             wecandeoVideo.setVideoKey(videoUrl);
                             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
-                            wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
+                            wecandeoSdk.setPlayerView(playerView);
                             wecandeoSdk.setDebugTextView(debugText);
                             //기본 컨트롤 뷰사용
                             wecandeoSdk.setUseController(false);
@@ -249,8 +246,8 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
                 break;
             case R.id.stop_button :
                 disableButton(stopButton);
-                wecandeoSdk.stop();
                 vodStatistics.sendStatistics(VodStatistics.STOP);
+                wecandeoSdk.stop();
                 isPlaying = false;
                 break;
             case R.id.play_button :
@@ -306,7 +303,10 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     private void disableButton(Button button){
         if(button == retryButton){
             for(Button item : buttonList){
-                item.setEnabled(true);
+                if(item == playButton)
+                    item.setEnabled(false);
+                else
+                    item.setEnabled(true);
             }
         }else{
             for(Button item : buttonList){
@@ -336,14 +336,11 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
     @Override
     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {}
 
-    @Override
-    public void onLoadingChanged(boolean isLoading) {}
-
 
     @Override
-    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+    public void onPlaybackStateChanged(int playbackState) {
         // 영상이 로드되고 준비가 되면 통계 연동 셋팅
-        if(playbackState == PLAY_ENABLE && wecandeoSdk.getPlayer() != null && isInitVideoInfo){
+        if(playbackState == Player.STATE_READY && wecandeoSdk.getPlayer() != null && isInitVideoInfo){
             isInitVideoInfo = false;
             vodStatistics.setWecandeoSdk(wecandeoSdk);
             vodStatistics.setDuration(TimeUnit.MILLISECONDS.toSeconds(wecandeoSdk.getPlayer().getDuration()));
@@ -351,7 +348,7 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
         }
 
         // 영상이 완료되었을 때
-        if(playWhenReady && playbackState == PLAY_COMPLETE && wecandeoSdk.getPlayer() != null){
+        if(playbackState == Player.STATE_ENDED && wecandeoSdk.getPlayer() != null){
             wecandeoSdk.complete();
             vodStatistics.sendStatistics(VodStatistics.STOP);
             if(!playButton.isEnabled()){
@@ -370,10 +367,5 @@ public class PlayerActivity extends AppCompatActivity implements View.OnClickLis
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {}
-
-    @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest) {}
-
-    @Override
-    public void onPositionDiscontinuity() {}
 }
+

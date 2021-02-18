@@ -15,13 +15,12 @@ import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.google.android.exoplayer2.ExoPlaybackException;
-import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.PlaybackParameters;
+import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.Timeline;
 import com.google.android.exoplayer2.source.TrackGroupArray;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.ui.SimpleExoPlayerView;
+import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.scenappsm.wecandeosdkplayer.SdkInterface;
@@ -30,11 +29,11 @@ import com.scenappsm.wecandeosdkplayer.WecandeoVideo;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-public class LiveActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, ExoPlayer.EventListener, SdkInterface.onSdkListener{
+public class LiveActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemSelectedListener, Player.EventListener, SdkInterface.onSdkListener{
 
     ConstraintLayout mainLayout;
     ConstraintLayout liveParent;
-    SimpleExoPlayerView simpleExoPlayerView;
+    PlayerView playerView;
 
     Button stopButton;
     Button playButton;
@@ -50,7 +49,6 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isPlayEnabled = false; // Live 재생 가능 여부
 
     private static final String TAG = "LiveActivity";
-    private static final int PLAY_COMPLETE = 4; // 플레이 완료
 
     String liveKey; // 발급 받은 liveKey 값을 입력
 
@@ -74,7 +72,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     private void initViews(){
         mainLayout = findViewById(R.id.main_layout);
         liveParent = findViewById(R.id.live_parent);
-        simpleExoPlayerView = findViewById(R.id.live_view);
+        playerView = findViewById(R.id.live_view);
         stopButton = findViewById(R.id.stop_button);
         stopButton.setOnClickListener(this);
         playButton = findViewById(R.id.play_button);
@@ -87,7 +85,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
         resizeSpinner.setAdapter(resizeSpinnerAdapter);
         resizeSpinner.setOnItemSelectedListener(this);
         resizeSpinner.bringToFront();
-        simpleExoPlayerView.setOnTouchListener(new View.OnTouchListener() {
+        playerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if(resizeSpinner.getVisibility() == View.VISIBLE){
@@ -120,9 +118,9 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                         JsonObject errorInfo = videoDetailObject.get("errorInfo").getAsJsonObject();
                         if(!errorInfo.get("errorCode").getAsString().equals("None")){
                             isPlayEnabled = false;
-                            ViewGroup.LayoutParams params = simpleExoPlayerView.getLayoutParams();
+                            ViewGroup.LayoutParams params = playerView.getLayoutParams();
                             params.height = 800;
-                            simpleExoPlayerView.setLayoutParams(params);
+                            playerView.setLayoutParams(params);
                             Toast.makeText(getApplicationContext(),"아직 방송시간이 아닙니다.",Toast.LENGTH_LONG).show();
                         }else{
                             // 현재 LIVE 방송 중일 경우 video setting
@@ -131,7 +129,7 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
                             wecandeoVideo.setDrm(false);
                             wecandeoVideo.setVideoKey(videoKey);
                             wecandeoSdk.setWecandeoVideo(wecandeoVideo);
-                            wecandeoSdk.setSimpleExoPlayerView(simpleExoPlayerView);
+                            wecandeoSdk.setPlayerView(playerView);
                             //기본 컨트롤 뷰사용
                             wecandeoSdk.setUseController(false);
                             // 통계 연동
@@ -222,34 +220,22 @@ public class LiveActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onTracksChanged(TrackGroupArray trackGroups, TrackSelectionArray trackSelections) {}
 
-    @Override
-    public void onLoadingChanged(boolean isLoading) {}
-
 
     @Override
-    public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
-
+    public void onPlaybackStateChanged(int playbackState) {
         // 영상이 완료되었을 때
-        if(playWhenReady && playbackState == PLAY_COMPLETE && wecandeoSdk.getPlayer() != null){
+        if(playbackState == Player.STATE_ENDED && wecandeoSdk.getPlayer() != null){
             wecandeoSdk.complete();
             liveStatistics.sendStatistics(LiveStatistics.STOP);
         }
     }
 
     @Override
-    public void onRepeatModeChanged(int repeatMode) {
-
-    }
+    public void onRepeatModeChanged(int repeatMode) {}
 
     @Override
     public void onPlayerError(ExoPlaybackException error) {}
 
     @Override
     public void onPlaybackParametersChanged(PlaybackParameters playbackParameters) {}
-
-    @Override
-    public void onTimelineChanged(Timeline timeline, Object manifest) {}
-
-    @Override
-    public void onPositionDiscontinuity() {}
 }
